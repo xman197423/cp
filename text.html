@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VideoHub</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Verdana,sans-serif;background:#111;color:#fff;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+
+.menu-btn{
+position:fixed;bottom:20px;right:20px;width:50px;height:50px;
+background:rgba(255,255,255,.1);
+border:2px solid rgba(255,255,255,.3);
+border-radius:12px;cursor:pointer;
+display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;z-index:1000}
+.dot{width:6px;height:6px;background:#fff;border-radius:50%}
+
+.auth-buttons{position:fixed;top:20px;right:20px;display:flex;gap:10px;z-index:1000}
+.auth-btn,.upload-btn{
+padding:10px 20px;border-radius:10px;
+border:2px solid rgba(255,255,255,.3);
+background:rgba(255,255,255,.1);
+color:#fff;font-weight:600;cursor:pointer}
+
+.upload-btn{
+border-color:rgba(255,215,0,.6);
+background:rgba(255,215,0,.3)}
+
+.user-info{
+padding:10px 20px;border-radius:10px;
+background:rgba(255,255,255,.1);
+border:2px solid rgba(255,255,255,.3)}
+
+.admin-badge{
+margin-left:6px;padding:2px 6px;
+background:rgba(255,215,0,.6);
+border-radius:5px;font-size:11px}
+
+.sidebar{
+position:fixed;top:0;left:-280px;width:280px;height:100%;
+background:#000;padding:80px 20px;transition:.3s;z-index:999}
+.sidebar.active{left:0}
+
+.sidebar-overlay{
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.6);display:none;z-index:998}
+.sidebar-overlay.active{display:block}
+
+.menu-item{
+padding:15px;border-radius:10px;
+cursor:pointer;display:flex;gap:10px}
+.menu-item:hover{background:rgba(255,255,255,.1)}
+
+.container{max-width:1400px;margin:auto;padding:100px 20px}
+.header{text-align:center;margin-bottom:40px}
+
+.video-grid{
+display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+gap:30px}
+
+.video-card{
+background:rgba(255,255,255,.05);
+border:2px solid rgba(255,255,255,.1);
+border-radius:15px;overflow:hidden;position:relative}
+
+.video-info{padding:15px}
+
+.delete-btn{
+position:absolute;top:10px;right:10px;
+padding:6px 12px;border:none;
+background:red;color:#fff;
+border-radius:8px;cursor:pointer}
+
+.hidden{display:none!important}
+
+.auth-container{display:flex;justify-content:center;align-items:center;min-height:100vh}
+.auth-box{
+background:rgba(255,255,255,.05);
+padding:40px;border-radius:20px;
+border:2px solid rgba(255,255,255,.1);
+width:100%;max-width:420px}
+
+.form-group{margin-bottom:15px}
+.form-group input,textarea{
+width:100%;padding:12px;
+background:rgba(255,255,255,.05);
+border:2px solid rgba(255,255,255,.2);
+border-radius:10px;color:#fff}
+
+.submit-btn{
+width:100%;padding:12px;
+border:none;border-radius:10px;
+background:#fff;color:#111;font-weight:700}
+
+.back-home{
+position:absolute;top:20px;left:20px;
+padding:10px 20px;border-radius:10px;
+background:rgba(255,255,255,.1);
+border:2px solid rgba(255,255,255,.1);
+cursor:pointer}
+</style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div id="homePage" class="page active">
+
+<div class="menu-btn" onclick="toggleMenu()">
+<div class="dot"></div><div class="dot"></div><div class="dot"></div>
+</div>
+
+<div class="auth-buttons" id="authButtons">
+<button class="auth-btn" onclick="showPage('loginPage')">Login</button>
+<button class="auth-btn" onclick="showPage('signupPage')">Sign Up</button>
+</div>
+
+<div class="auth-buttons hidden" id="loggedInButtons">
+<button class="upload-btn hidden" id="uploadButton" onclick="showPage('uploadPage')">Upload</button>
+<div class="user-info" id="userInfo"></div>
+<button class="auth-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="sidebar-overlay" onclick="toggleMenu()"></div>
+<div class="sidebar">
+<div class="menu-item" onclick="showPage('homePage')">🏠 Home</div>
+<div class="menu-item admin-only" onclick="showUsers()">👥 Manage Users</div>
+</div>
+
+<div class="container" id="videoContainer" style="display:none">
+<div class="header">
+<h1>VideoHub</h1>
+<p>Videos visible only after login</p>
+</div>
+<div class="video-grid" id="videoGrid"></div>
+</div>
+
+</div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page">
+<div class="back-home" onclick="showPage('homePage')">← Back</div>
+<div class="auth-container">
+<div class="auth-box">
+<h2>Login</h2>
+<form onsubmit="handleLogin(event)">
+<div class="form-group"><input id="loginUsername" required placeholder="Username"></div>
+<div class="form-group"><input id="loginPassword" type="password" required placeholder="Password"></div>
+<button class="submit-btn">Login</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- SIGNUP -->
+<div id="signupPage" class="page">
+<div class="back-home" onclick="showPage('homePage')">← Back</div>
+<div class="auth-container">
+<div class="auth-box">
+<h2>Sign Up</h2>
+<form onsubmit="handleSignup(event)">
+<div class="form-group"><input id="signupUsername" required placeholder="Username"></div>
+<div class="form-group"><input id="signupPassword" type="password" required placeholder="Password"></div>
+<button class="submit-btn">Sign Up</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- UPLOAD -->
+<div id="uploadPage" class="page">
+<div class="back-home" onclick="showPage('homePage')">← Back</div>
+<div class="auth-container">
+<div class="auth-box">
+<h2>Upload Video</h2>
+<form onsubmit="handleUpload(event)">
+<div class="form-group"><input id="videoTitle" required placeholder="Title"></div>
+<div class="form-group"><textarea id="videoLink" required placeholder="Streamable embed link"></textarea></div>
+<button class="submit-btn">Upload</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- USERS -->
+<div id="manageUsersPage" class="page">
+<div class="back-home" onclick="showPage('homePage')">← Back</div>
+<div class="auth-container">
+<div class="auth-box">
+<h2>Users</h2>
+<div id="usersList"></div>
+</div>
+</div>
+</div>
+
+<script>
+let users=[{username:"XMAN",password:"xman197423",approved:true,admin:true}]
+let currentUser=null,isAdmin=false
+
+function toggleMenu(){
+document.querySelector('.sidebar').classList.toggle('active')
+document.querySelector('.sidebar-overlay').classList.toggle('active')
+}
+
+function showPage(id){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+document.getElementById(id).classList.add('active')
+toggleMenu(false)
+}
+
+function updateVideos(){
+document.getElementById('videoContainer').style.display=currentUser?"block":"none"
+}
+
+function handleLogin(e){
+e.preventDefault()
+let u=loginUsername.value.trim(),p=loginPassword.value.trim()
+let f=users.find(x=>x.username===u&&x.password===p&&x.approved)
+if(!f)return alert("Invalid or not approved")
+currentUser=u;isAdmin=f.admin
+authButtons.classList.add('hidden')
+loggedInButtons.classList.remove('hidden')
+uploadButton.classList.toggle('hidden',!isAdmin)
+userInfo.innerHTML=u+(isAdmin?'<span class="admin-badge">ADMIN</span>':'')
+document.querySelectorAll('.admin-only').forEach(e=>e.style.display=isAdmin?'flex':'none')
+updateVideos();showPage('homePage')
+}
+
+function logout(){
+currentUser=null;isAdmin=false
+authButtons.classList.remove('hidden')
+loggedInButtons.classList.add('hidden')
+uploadButton.classList.add('hidden')
+document.querySelectorAll('.admin-only').forEach(e=>e.style.display='none')
+updateVideos()
+}
+
+function handleSignup(e){
+e.preventDefault()
+if(users.some(x=>x.username===signupUsername.value))return alert("Exists")
+users.push({username:signupUsername.value,password:signupPassword.value,approved:false,admin:false})
+alert("Waiting admin approval")
+showPage('homePage')
+}
+
+function showUsers(){
+showPage('manageUsersPage')
+usersList.innerHTML=''
+users.forEach((u,i)=>{
+usersList.innerHTML+=`
+<div style="margin:10px 0">
+<b>${u.username}</b> | Approved:${u.approved} | Admin:${u.admin}
+${!u.approved?`<button onclick="approveUser(${i})">Approve</button>`:''}
+<button onclick="toggleAdmin(${i})">Admin</button>
+<button onclick="deleteUser(${i})">Delete</button>
+</div>`
+})
+}
+
+function approveUser(i){users[i].approved=true;showUsers()}
+function toggleAdmin(i){users[i].admin=!users[i].admin;showUsers()}
+function deleteUser(i){users.splice(i,1);showUsers()}
+
+function handleUpload(e){
+e.preventDefault()
+let t=videoTitle.value,l=videoLink.value
+if(l.includes('<iframe'))l=l.match(/src="([^"]+)"/)[1]
+if(!l.includes("streamable.com/e/"))return alert("Invalid link")
+let c=document.createElement('div')
+c.className='video-card'
+c.innerHTML=`
+<iframe src="${l}" style="width:100%;aspect-ratio:16/9;border:none" allowfullscreen></iframe>
+<div class="video-info">${t}</div>
+${isAdmin?'<button class="delete-btn" onclick="deleteVideo(this)">Delete</button>':''}`
+videoGrid.prepend(c)
+showPage('homePage')
+}
+
+function deleteVideo(btn){
+if(!isAdmin)return alert("Admin only")
+btn.parentElement.remove()
+}
+</script>
+
+</body>
+</html>
